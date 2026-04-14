@@ -89,17 +89,17 @@ class Purchaser:
         logger.info("页面预热完成")
 
     def _wait_until_target_time(self) -> None:
-        """精确等待到目标时间（自旋等待，10ms精度）"""
+        """精确等待到 start_time（自旋等待，10ms精度）"""
         now = datetime.now()
-        h, m = map(int, self._config.schedule.time.split(":"))
+        h, m = map(int, self._config.target.start_time.split(":"))
         target = now.replace(hour=h, minute=m, second=0, microsecond=0)
 
         if target <= now:
-            logger.warning(f"目标时间 {self._config.schedule.time} 已过，立即执行")
+            logger.warning(f"开始时间 {self._config.target.start_time} 已过，立即执行")
             return
 
         diff = (target - now).total_seconds()
-        logger.info(f"等待目标时间 {self._config.schedule.time}（还有 {diff:.0f} 秒）")
+        logger.info(f"等待开始时间 {self._config.target.start_time}（还有 {diff:.0f} 秒）")
 
         # 粗等到还剩1秒
         if diff > 1:
@@ -112,17 +112,19 @@ class Purchaser:
         logger.info("已到达目标时间！")
 
     def _attempt_purchase(self, page: Page) -> PurchaseResult:
-        """带重试的抢购尝试"""
+        """多轮多重重试的抢购尝试"""
+        rounds = self._config.purchase.rounds
+        round_interval = self._config.purchase.round_interval
         max_retries = self._config.purchase.max_retries
         retry_interval = self._config.purchase.retry_interval
 
-        for attempt in range(1, max_retries + 1):
-            logger.info(f"=== 第 {attempt}/{max_retries} 次尝试 ===")
+        for round_num in range(1, rounds + 1):
+            logger.info(f"====== 第 {round_num}/{rounds} 轮 ======")
 
-            # 刷新页面（首次或重试时）
-            if self._config.purchase.page_refresh_before_click or attempt > 1:
+            # 每轮开始前刷新页面
+            if round_num > 1 or self._config.purchase.page_refresh_before_click:
                 self._browser.reload()
-                take_screenshot(page, f"refresh_attempt_{attempt}")
+                take_screenshot(page, f"round_{round_num}_start")
 
             # 检查登录态
             if self._check_login_expired(page):
@@ -135,33 +137,31 @@ class Purchaser:
             # 检查售罄
             if self._check_sold_out(page):
                 logger.info("检测到售罄标识")
-                # 不直接返回，继续重试（可能在刷新后有库存）
 
-            # 尝试点击订阅按钮
-            click_result = self._click_subscribe(page)
-            if not click_result:
+            # 每轮内重试
+            for attempt in range(1, max_retries + 1):
+                logger.info(f"--- 第 {attempt}/{max_retries} 次尝试 ---")
+
+                # 尝试点击订阅按钮
+                click_result = self._click_subscribe(page)
+                if click_result:
+                    # 检测支付弹窗
+                    payment_result = self._detect_payment(page)
+                    if payment_result:
+                        return payment_result
+
                 if attempt < max_retries:
-                    logger.warning(f"点击失败，{retry_interval}秒后重试...")
+                    logger.warning(f"尝试失败，{retry_interval}秒后重试...")
                     time.sleep(retry_interval)
-                    continue
-                else:
-                    screenshot = take_screenshot(page, "failed_all_retries")
-                    msg = f"订阅按钮点击失败（已重试 {max_retries} 次）"
-                    self._notifier.notify_failure(msg, screenshot)
-                    return PurchaseResult(PurchaseStatus.FAILED, msg, screenshot)
 
-            # 检测支付弹窗
-            payment_result = self._detect_payment(page)
-            if payment_result:
-                return payment_result
+            # 本轮全部失败
+            if round_num < rounds:
+                logger.warning(f"第 {round_num} 轮失败，{round_interval}秒后开始下一轮")
+                time.sleep(round_interval)
 
-            if attempt < max_retries:
-                logger.warning(f"未检测到支付弹窗，{retry_interval}秒后重试...")
-                time.sleep(retry_interval)
-
-        # 所有重试用尽
-        screenshot = take_screenshot(page, "failed_no_payment")
-        msg = "未检测到支付弹窗（已重试全部次数）"
+        # 所有轮次用尽
+        screenshot = take_screenshot(page, "failed_all_rounds")
+        msg = f"抢购失败（已执行 {rounds} 轮，每轮 {max_retries} 次）"
         self._notifier.notify_failure(msg, screenshot)
         return PurchaseResult(PurchaseStatus.FAILED, msg, screenshot)
 

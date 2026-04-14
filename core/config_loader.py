@@ -20,7 +20,7 @@ _config = None
 @dataclass
 class TargetConfig:
     url: str = "https://bigmodel.cn/glm-coding"
-    pre_open_seconds: int = 15
+    start_time: str = "9:59"              # 实际开始抢购时间（HH:MM）
 
 
 @dataclass
@@ -46,8 +46,10 @@ class SelectorsConfig:
 
 @dataclass
 class PurchaseConfig:
-    max_retries: int = 3
-    retry_interval: int = 2
+    rounds: int = 5                      # 重试轮数
+    round_interval: int = 5              # 轮次间隔（秒）
+    max_retries: int = 3                 # 每轮内重试次数
+    retry_interval: int = 2              # 重试间隔（秒）
     page_refresh_before_click: bool = True
     click_timeout: int = 5000
     payment_wait_timeout: int = 60000

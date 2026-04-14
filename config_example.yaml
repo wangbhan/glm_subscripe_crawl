@@ -4,12 +4,14 @@
 # 目标页面
 target:
   url: "https://bigmodel.cn/glm-coding"
-  pre_open_seconds: 15          # 提前多少秒打开页面预热
+  start_time: "9:59"           # 实际开始抢购时间（HH:MM）
 
 # 定时设置
+# schedule.time 是脚本触发时间，会提前打开页面预热
+# 建议 = start_time - 15~20分钟，避免高峰期网站卡死
 schedule:
   enabled: true
-  time: "10:00"                 # 每天执行时间（HH:MM）
+  time: "9:40"                 # 脚本触发时间（提前预热）
 
 # 浏览器设置
 browser:
@@ -29,16 +31,18 @@ selectors:
 
 # 抢购参数
 purchase:
-  max_retries: 3                # 最大重试次数
-  retry_interval: 2             # 重试间隔秒
-  page_refresh_before_click: true  # 点击前是否刷新页面
+  rounds: 5                     # 重试轮数
+  round_interval: 5             # 轮次间隔（秒）
+  max_retries: 3                # 每轮内重试次数
+  retry_interval: 2             # 重试间隔（秒）
+  page_refresh_before_click: true  # 每轮开始前是否刷新页面
   click_timeout: 5000           # 等待按钮出现的超时时间(ms)
   payment_wait_timeout: 60000   # 等待支付弹窗的超时时间(ms)
 
 # ntfy 通知设置
 ntfy:
   enabled: true
-  url: "https://ntfy.sh/blRQQ6LAaLGrdwAw"
+  url: "https://ntfy.sh/your-topic"
 
 # 日志
 logging:

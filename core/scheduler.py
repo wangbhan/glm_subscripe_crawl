@@ -54,8 +54,8 @@ class TaskScheduler:
         browser_manager = BrowserManager(self._config.browser)
         purchaser = Purchaser(browser_manager, self._config, self._notifier)
 
-        # skip_wait=True: 定时触发时无需再次等待
-        result = purchaser.execute(skip_wait=True)
+        # skip_wait=False: 让 purchaser 自行等待到 target.start_time
+        result = purchaser.execute(skip_wait=False)
 
         logger.info(
             f"抢购结果: status={result.status.value}, "
