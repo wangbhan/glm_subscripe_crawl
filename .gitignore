@@ -1,0 +1,11 @@
+browser_data/
+logs/
+screenshots/
+config.yaml
+__pycache__/
+*.pyc
+.idea/
+*.egg-info/
+dist/
+build/
+.env

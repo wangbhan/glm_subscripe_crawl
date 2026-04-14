@@ -1,0 +1,48 @@
+# GLM Coding 自动抢购配置文件
+# 复制此文件为 config.yaml 并填写实际值
+
+# 目标页面
+target:
+  url: "https://bigmodel.cn/glm-coding"
+  pre_open_seconds: 15          # 提前多少秒打开页面预热
+
+# 定时设置
+schedule:
+  enabled: true
+  time: "10:00"                 # 每天执行时间（HH:MM）
+
+# 浏览器设置
+browser:
+  user_data_dir: "./browser_data"
+  headless: false               # 是否无头模式（首次登录需设为 false）
+  viewport:
+    width: 1280
+    height: 800
+  slow_mo: 50                   # 操作间隔毫秒数
+
+# 页面元素选择器（需用 F12 开发者工具确认后填入）
+# 使用方法：Chrome 打开目标页面 -> F12 -> 元素选择器 -> 右键 Copy selector
+selectors:
+  subscribe_button: ""          # 购买/订阅按钮的 CSS 选择器
+  payment_dialog: ""            # 支付弹窗容器的 CSS 选择器
+  sold_out_indicator: ""        # 售罄标识的 CSS 选择器（可选）
+
+# 抢购参数
+purchase:
+  max_retries: 3                # 最大重试次数
+  retry_interval: 2             # 重试间隔秒
+  page_refresh_before_click: true  # 点击前是否刷新页面
+  click_timeout: 5000           # 等待按钮出现的超时时间(ms)
+  payment_wait_timeout: 60000   # 等待支付弹窗的超时时间(ms)
+
+# ntfy 通知设置
+ntfy:
+  enabled: true
+  url: "https://ntfy.sh/blRQQ6LAaLGrdwAw"
+
+# 日志
+logging:
+  level: "INFO"
+  file: "./logs/app.log"
+  max_bytes: 10485760           # 10MB
+  backup_count: 5
